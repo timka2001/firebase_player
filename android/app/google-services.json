@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "83681595421",
+    "project_id": "music-player-b3217",
+    "storage_bucket": "music-player-b3217.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:83681595421:android:e475dc46929e59243d36f4",
+        "android_client_info": {
+          "package_name": "com.example.flutter_firebase_player"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "83681595421-3a8bq7lgb1v7f35af554hiatkqtgaio6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvr2UoWLJMLww3hknHNL1rap3P0WBmAeQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "83681595421-3a8bq7lgb1v7f35af554hiatkqtgaio6.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "83681595421-ku2qm9p6le423kg8m2m0d52mr6obf5l2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.flutterFirebasePlayer"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
