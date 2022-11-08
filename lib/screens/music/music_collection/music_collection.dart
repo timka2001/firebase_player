@@ -1,16 +1,21 @@
+import 'package:audioplayers/audioplayers.dart';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_firebase_player/firebase/info.dart';
+
+import '../../servic/servic.dart';
 
 class Music_collection extends StatefulWidget {
-  Music_collection(AudioConverter my_audio_information) {
-    information = my_audio_information;
+  // ignore: use_key_in_widget_constructors
+  Music_collection(MusicBloc musicBloc) {
+    print("object");
+    information = musicBloc;
   }
 
   @override
   _Music_collectionState createState() => _Music_collectionState();
 }
 
-late AudioConverter information;
+late MusicBloc information;
 
 class _Music_collectionState extends State<Music_collection> {
   @override
@@ -23,8 +28,12 @@ class _Music_collectionState extends State<Music_collection> {
             child: Padding(
               padding: EdgeInsets.only(right: 20, left: 20),
               child: TextField(
-                  style: TextStyle(color: Colors.white),
-                  onChanged: (value) {},
+                  style: TextStyle(
+                    color: Colors.white,
+                  ),
+                  onChanged: (value) {
+                    information.runFilter(value);
+                  },
                   decoration: const InputDecoration(
                     fillColor: Color.fromRGBO(18, 18, 18, 18),
                     filled: true,
@@ -33,10 +42,7 @@ class _Music_collectionState extends State<Music_collection> {
                       fontWeight: FontWeight.bold,
                     ),
                     labelText: "Search",
-                    suffixIcon: Icon(
-                      Icons.search,
-                      color: Colors.pink,
-                    ),
+                    suffixIcon: Icon(Icons.search, color: Colors.pink),
                     focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(25.0)),
                         borderSide: BorderSide(
@@ -50,45 +56,60 @@ class _Music_collectionState extends State<Music_collection> {
             ),
           ),
           Expanded(
-            flex: 10,
-            child: ListView.builder(
-                itemCount: 1,
-                itemBuilder: (BuildContext context, int index) {
-                  return Padding(
-                      padding: EdgeInsets.all(5),
-                      child: ListTile(
-                          tileColor: Color.fromRGBO(18, 18, 18, 18),
-                          textColor: Colors.white,
-                          iconColor: Colors.white,
-                          trailing:
-                              LayoutBuilder(builder: (context, constraints) {
-                            return Icon(
-                              Icons.pause,
-                              color: Color.fromARGB(255, 209, 51, 237),
-                            );
-                          }),
-                          leading: ConstrainedBox(
-                            constraints: BoxConstraints(
-                                maxHeight: 44,
-                                minHeight: 44,
-                                maxWidth: 64,
-                                minWidth: 64),
-                            child: Image.network(
-                                "https://flutter.github.io/assets-for-api-docs/assets/widgets/owl.jpg"),
-                          ),
-                          title: Text(
-                            "artist",
-                            textAlign: TextAlign.left,
-                          ),
-                          subtitle: Text(
-                            information.trackName[index],
-                            textAlign: TextAlign.start,
-                          ),
-                          onTap: () async {}));
-                }),
-          ),
+              flex: 10,
+              child: StreamBuilder(
+                stream: information.outputAudioStateController,
+                builder: (context, snapshot) {
+                  return ListView.builder(
+                      itemCount: information.audio_on_screen.artist.length,
+                      itemBuilder: (BuildContext context, int i) {
+                        return Padding(
+                            padding: EdgeInsets.all(5),
+                            child: ListTile(
+                                tileColor: Color.fromRGBO(18, 18, 18, 18),
+                                textColor: Colors.white,
+                                iconColor: Colors.white,
+                                trailing: LayoutBuilder(
+                                    builder: (context, constraints) {
+                                  return Icon(
+                                    information.playNow.isPlaying[i]
+                                        ? Icons.play_arrow
+                                        : Icons.pause,
+                                    color: Color.fromARGB(255, 209, 51, 237),
+                                  );
+                                }),
+                                leading: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                      maxHeight: 44,
+                                      minHeight: 44,
+                                      maxWidth: 64,
+                                      minWidth: 64),
+                                  child: Image.network(
+                                      "https://flutter.github.io/assets-for-api-docs/assets/widgets/owl.jpg"),
+                                ),
+                                title: Text(
+                                  "artist",
+                                  textAlign: TextAlign.left,
+                                ),
+                                subtitle: Text(
+                                  information.audio_on_screen.trackName[i],
+                                  textAlign: TextAlign.start,
+                                ),
+                                onTap: () async {
+                                  information.audioTaped(i);
+                                  information.inputAudioEventSink
+                                      .add(AudioEvent.event_play);
+
+                                  print(information.playNow.position);
+                                  print(information.playNow.duration);
+                                }));
+                      });
+                },
+              )),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              information.inputEventSink.add(MusicEvent.event_add_music);
+            },
             child: Text("Add Music"),
           )
         ]));
