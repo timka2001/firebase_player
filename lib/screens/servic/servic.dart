@@ -16,7 +16,7 @@ enum AudioEvent { event_play, event_stop, event_skip_next, event_skip_back }
 ////
 class Audio {
   final audioPlayer = AudioPlayer();
-  List<bool> isPlaying = [];
+  bool isPlaying = false;
   Duration duration = Duration.zero;
   Duration position = Duration.zero;
   bool onTap = false;
@@ -42,6 +42,16 @@ class MusicBloc {
 
   final StreamController _inputEventController = StreamController<MusicEvent>();
   StreamSink get inputEventSink => _inputEventController.sink;
+  void _iniAudio() {
+    playNow.audioPlayer.onDurationChanged.listen((totalDuration) {
+      playNow.duration = totalDuration;
+      _outputAudioStateController.sink.add(playNow);
+    });
+    playNow.audioPlayer.onPositionChanged.listen((totalDuration) {
+      playNow.position = totalDuration;
+      _outputAudioStateController.sink.add(playNow);
+    });
+  }
 
   final _outputStateController = StreamController<AudioConverter>();
   Stream<AudioConverter> get outputStateController =>
@@ -51,54 +61,35 @@ class MusicBloc {
       StreamController<AudioEvent>();
   StreamSink get inputAudioEventSink => _inputAudioEventController.sink;
 
-  final _outputAudioStateController = StreamController<Audio>();
+  final _outputAudioStateController = StreamController<Audio>.broadcast();
   Stream<Audio> get outputAudioStateController =>
       _outputAudioStateController.stream;
-
-  void initState() {
-    playNow.audioPlayer.onPlayerStateChanged.listen((state) {
-      playNow.isPlaying[playNow.tapIndex] = state == PlayerState.playing;
-    });
-    playNow.audioPlayer.onDurationChanged.listen((newDuration) {
-      playNow.duration = newDuration;
-    });
-    playNow.audioPlayer.onPositionChanged.listen((newPosition) {
-      playNow.position = newPosition;
-    });
-  }
 
   Future<void> _increaseAudioStream(event) async {
     if (playNow.onTap) {
       if (event == AudioEvent.event_play) {
-        playNow.audioPlayer
-            .play(UrlSource(audio_on_screen.musicUrl[playNow.tapIndex]));
-        currentPosition();
-        fileDuration();
-        print(playNow.duration);
-        print(playNow.position);
-        playNow.isPlaying[playNow.tapIndex] = true;
+        playNow.audioPlayer.resume();
+        playNow.isPlaying = true;
         _outputAudioStateController.sink.add(playNow);
       } else if (event == AudioEvent.event_stop) {
         playNow.audioPlayer.stop();
-        playNow.isPlaying[playNow.tapIndex] = false;
+        playNow.isPlaying = false;
         _outputAudioStateController.sink.add(playNow);
       }
     }
-    _outputAudioStateController.sink.add(playNow);
   }
 
-  Stream<Audio> currentPosition() async* {
-    yield* playNow.audioPlayer.getCurrentPosition();
-  }
-
-  Stream<Duration> fileDuration() async* {
-    yield* this.playNow.audioPlayer.onDurationChanged;
-  }
-
-  void audioTaped(int i) {
+  Future<void> audioTaped(int i) async {
     playNow.tapIndex = i;
     playNow.onTap = true;
-    initState();
+
+    await playNow.audioPlayer.setSourceUrl(audio_on_screen.musicUrl[i]);
+    playNow.audioPlayer
+        .play(UrlSource(audio_on_screen.musicUrl[playNow.tapIndex]));
+
+    print('position: ${playNow.position}');
+    print('duration: ${playNow.duration}');
+
     _outputAudioStateController.sink.add(playNow);
   }
 
@@ -133,14 +124,14 @@ class MusicBloc {
         print(connectionServise);
       } else if (value.data()!.isNotEmpty) {
         connectionServise = true;
-        playNow.isPlaying =
-            List.filled(audio_on_screen.musicUrl.length, false, growable: true);
+
         print('--------fffffff------');
         print(connectionServise);
         print(value.data());
 
         audio_on_screen =
             AudioConverter.fromJson(value.data() as Map<String, dynamic>);
+        _iniAudio();
       }
     });
   }
@@ -244,6 +235,12 @@ class MusicBloc {
 
   void runFilter(String enteredKeyword) {
     Set<int> listResult = {};
+    if (playNow.onTap = true) {
+      playNow.audioPlayer.stop();
+      playNow.onTap = false;
+
+      _outputAudioStateController.sink.add(playNow);
+    }
 
     if (connectionServise == true) {
       print('uuuuuusssssseeeeeerrrrr');
@@ -299,13 +296,19 @@ class MusicBloc {
 
         print('${audio_on_screen.artist}');
       }
+
       _outputStateController.sink.add(audio_on_screen);
     }
   }
 
-  void dispose() {
+  @override
+  void disposeAudio() {
     _inputAudioEventController.close();
     _outputAudioStateController.close();
+  }
+
+  @override
+  void dispose() {
     _inputEventController.close();
     _outputStateController.close();
   }
