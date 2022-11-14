@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_firebase_player/firebase/info.dart';
 
 import 'package:flutter_firebase_player/screens/music/music_collection/music_collection.dart';
 
@@ -14,24 +16,20 @@ class _MusicsState extends State<Musics> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder(
-        stream: musicBloc.outputStateController,
+    return FutureBuilder(
+        future: FirebaseFirestore.instance
+            .collection('users')
+            .doc('Musics')
+            .get()
+            .then((value) => value.data()),
         builder: (context, snapshot) {
-          if (!musicBloc.connectionServise) {
-            musicBloc.inputEventSink.add(MusicEvent.event_add_all_music);
+          if (snapshot.data.toString() == '{}') {
+            return Center(child: Text('Data Is Empty'));
+          } else if (snapshot.data == null) {
+            return Center(child: Text('Check name collection or doc'));
           }
-
-          if (musicBloc.connectionServise) {
-            if (musicBloc.checkCount()) {
-              return Music_collection(musicBloc);
-            } else {
-              return Center(
-                  child: Text('Проверь Firebase у тебя ошибка со списками'));
-            }
-          }
-          return Center(
-            child: Text("Error"),
-          );
+          musicBloc.addAllMusic(snapshot.data as Map<String, dynamic>);
+          return Music_collection(musicBloc);
         });
   }
 }

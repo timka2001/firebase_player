@@ -1,4 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
+import '../servic/my_servic.dart';
+import 'my_music_collection/my_music_collection.dart';
 
 class My_Musics extends StatefulWidget {
   @override
@@ -6,15 +10,23 @@ class My_Musics extends StatefulWidget {
 }
 
 class _My_MusicsState extends State<My_Musics> {
+  MyMusicBloc myMusicBloc = MyMusicBloc();
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: Center(
-        child: Text(
-          'This is the My Music Collection.',
-          style: TextStyle(color: Colors.white, fontSize: 18),
-        ),
-      ),
-    );
+    return FutureBuilder(
+        future: FirebaseFirestore.instance
+            .collection('users')
+            .doc('My musics')
+            .get()
+            .then((value) => value.data()),
+        builder: (context, snapshot) {
+          if (snapshot.data.toString() == '{}') {
+            return Center(child: Text('Data Is Empty'));
+          } else if (snapshot.data == null) {
+            return Center(child: Text('Check name collection or doc'));
+          }
+          myMusicBloc.addAllMusic(snapshot.data as Map<String, dynamic>);
+          return My_Music_collection(myMusicBloc);
+        });
   }
 }

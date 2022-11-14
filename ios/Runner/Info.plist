@@ -52,5 +52,6 @@
 	   <key>NSAllowsArbitraryLoadsForMedia</key>
        <true/>
     </dict>
+	
 </dict>
 </plist>

@@ -36,7 +36,7 @@ class _RootScreenState extends State<RootScreen> {
             unselectedItemColor: Color.fromARGB(255, 209, 51, 237),
             selectedIconTheme: IconThemeData(color: Colors.pink, size: 40),
             selectedItemColor: Colors.pink,
-            backgroundColor: Color.fromRGBO(34, 34, 34, 34),
+            backgroundColor: Color.fromRGBO(18, 18, 18, 18),
             onTap: (index) {
               if (index == 0) {
                 BlocProvider.of<NavigationCubit>(context)

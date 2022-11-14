@@ -11,7 +11,13 @@ enum MusicEvent {
   event_add_music,
   event_searh_music,
 }
-enum AudioEvent { event_play, event_stop, event_skip_next, event_skip_back }
+enum AudioEvent {
+  event_play,
+  event_stop,
+  event_skip_next,
+  event_skip_back,
+  evvent_add_My_musics
+}
 
 ////
 class Audio {
@@ -68,25 +74,103 @@ class MusicBloc {
   Future<void> _increaseAudioStream(event) async {
     if (playNow.onTap) {
       if (event == AudioEvent.event_play) {
-        playNow.audioPlayer.resume();
+        print('play');
+
+        print('position: ${playNow.position}');
+        print('duration: ${playNow.duration}');
         playNow.isPlaying = true;
+        print('isPlaying: ${playNow.isPlaying}');
+        await playNow.audioPlayer.resume();
+
         _outputAudioStateController.sink.add(playNow);
       } else if (event == AudioEvent.event_stop) {
-        playNow.audioPlayer.stop();
+        await playNow.audioPlayer.pause();
+        print('stop');
+        print('position: ${playNow.position}');
+        print('duration: ${playNow.duration}');
         playNow.isPlaying = false;
+        print('isPlaying: ${playNow.isPlaying}');
         _outputAudioStateController.sink.add(playNow);
+      } else if (event == AudioEvent.event_skip_back) {
+        if (playNow.tapIndex != 0) {
+          audioTaped(playNow.tapIndex - 1);
+        } else {
+          _inputAudioEventController.add(AudioEvent.event_stop);
+          playNow.audioPlayer.seek(Duration.zero);
+        }
+      } else if (event == AudioEvent.event_skip_next) {
+        if (playNow.tapIndex != audio_on_screen.musicUrl.length - 1) {
+          audioTaped(playNow.tapIndex + 1);
+        } else {
+          _inputAudioEventController.add(AudioEvent.event_stop);
+          playNow.audioPlayer.seek(Duration.zero);
+        }
+      } else if (event == AudioEvent.evvent_add_My_musics) {
+        bool addValue = false;
+        AudioConverter my_music = AudioConverter(
+            artist: [], trackImage: [], trackName: [], musicUrl: []);
+        final userMyRef =
+            FirebaseFirestore.instance.collection('users').doc('My musics');
+        userMyRef.get().then((value) {
+          print("value");
+          print(value.data().toString());
+          if (value.data().toString() != '{}' && value.data != null) {
+            value.data()?.forEach((key, val) {
+              print("key");
+              if (key == 'musicUrl') {
+                val.forEach((element) {
+                  if (element.toString() ==
+                      audio_on_screen.musicUrl[playNow.tapIndex]) {
+                    addValue = true;
+                    print("addValue");
+                  }
+                });
+                if (!addValue) {
+                  print(addValue);
+                  my_music = AudioConverter.fromJson(
+                      value.data() as Map<String, dynamic>);
+                  my_music.artist.add(audio_on_screen.artist[playNow.tapIndex]);
+                  my_music.trackName
+                      .add(audio_on_screen.trackName[playNow.tapIndex]);
+                  my_music.trackImage
+                      .add(audio_on_screen.trackImage[playNow.tapIndex]);
+                  my_music.musicUrl
+                      .add(audio_on_screen.musicUrl[playNow.tapIndex]);
+                  print("my_music");
+                  print(my_music.toJson());
+
+                  userMyRef.set(my_music.toJson());
+                }
+              }
+            });
+          } else if (value.data().toString() == '{}') {
+            print("Hi");
+            my_music.artist.add(audio_on_screen.artist[playNow.tapIndex]);
+            my_music.trackName.add(audio_on_screen.trackName[playNow.tapIndex]);
+            my_music.trackImage
+                .add(audio_on_screen.trackImage[playNow.tapIndex]);
+            my_music.musicUrl.add(audio_on_screen.musicUrl[playNow.tapIndex]);
+            print("my_music");
+            print(my_music.toJson());
+
+            userMyRef.set(my_music.toJson());
+          }
+        });
       }
     }
   }
 
   Future<void> audioTaped(int i) async {
     playNow.tapIndex = i;
+    if (playNow.onTap) {
+      playNow.audioPlayer.pause();
+      playNow.audioPlayer.seek(Duration.zero);
+    }
     playNow.onTap = true;
 
-    await playNow.audioPlayer.setSourceUrl(audio_on_screen.musicUrl[i]);
-    playNow.audioPlayer
+    await playNow.audioPlayer
         .play(UrlSource(audio_on_screen.musicUrl[playNow.tapIndex]));
-
+    _inputAudioEventController.add(AudioEvent.event_play);
     print('position: ${playNow.position}');
     print('duration: ${playNow.duration}');
 
@@ -94,9 +178,7 @@ class MusicBloc {
   }
 
   Future<void> _increaseStream(event) async {
-    if (event == MusicEvent.event_add_all_music) {
-      _addAllMusic();
-    } else if (event == MusicEvent.event_add_music) {
+    if (event == MusicEvent.event_add_music) {
       _addMusic();
     } else {
       throw Exception('Wrang Event Type');
@@ -114,26 +196,10 @@ class MusicBloc {
     }
   }
 
-  void _addAllMusic() {
-    _userRef.get().then((value) {
-      if (value.data() == null || value.data()!.isEmpty) {
-        connectionServise = false;
-
-        print('--------kkkkkkkk------');
-
-        print(connectionServise);
-      } else if (value.data()!.isNotEmpty) {
-        connectionServise = true;
-
-        print('--------fffffff------');
-        print(connectionServise);
-        print(value.data());
-
-        audio_on_screen =
-            AudioConverter.fromJson(value.data() as Map<String, dynamic>);
-        _iniAudio();
-      }
-    });
+  void addAllMusic(Map<String, dynamic> value) {
+    audio_on_screen = AudioConverter.fromJson(value);
+    _iniAudio();
+    _outputStateController.sink.add(audio_on_screen);
   }
 
   void _addMusic() async {
@@ -170,7 +236,7 @@ class MusicBloc {
                 print("task done Name : $url");
                 audio_on_screen.musicUrl.add(url);
                 audio_on_screen.artist
-                    .add('artist ${audio_on_screen.artist.length + 1}');
+                    .add('Artist ${audio_on_screen.artist.length + 1}');
                 audio_on_screen.trackName
                     .add('Track Name ${audio_on_screen.trackName.length + 1}');
                 audio_on_screen.trackImage.add(
@@ -217,7 +283,7 @@ class MusicBloc {
                     .then((url) {
                   audio_on_screen.musicUrl.add(url);
                   audio_on_screen.artist
-                      .add('artist ${audio_on_screen.artist.length + 1}');
+                      .add('Artist ${audio_on_screen.artist.length + 1}');
                   audio_on_screen.trackName.add(
                       'Track Name ${audio_on_screen.trackName.length + 1}');
                   audio_on_screen.trackImage.add(
@@ -242,17 +308,22 @@ class MusicBloc {
       _outputAudioStateController.sink.add(playNow);
     }
 
-    if (connectionServise == true) {
+    if (enteredKeyword.isEmpty) {
       print('uuuuuusssssseeeeeerrrrr');
       _userRef.get().then((value) => audio_on_screen =
           AudioConverter.fromJson(value.data() as Map<String, dynamic>));
       print(audio_on_screen.artist.length);
       print('uuuuuusssssseeeeeerrrrr');
-    }
-
-    if (enteredKeyword.isEmpty) {
+      print('Hi Mom');
       _outputStateController.sink.add(audio_on_screen);
     } else if (enteredKeyword.isNotEmpty) {
+      print('uuuuuusssssseeeeeerrrrr');
+      _userRef.get().then((value) => audio_on_screen =
+          AudioConverter.fromJson(value.data() as Map<String, dynamic>));
+      print(audio_on_screen.artist.length);
+      print('uuuuuusssssseeeeeerrrrr');
+      print('Hi Mom');
+      print('Hi Man');
       for (int i = 0; i < audio_on_screen.artist.length; i++) {
         if (audio_on_screen.artist[i]
             .toString()
@@ -285,6 +356,7 @@ class MusicBloc {
             trackName: addItem.trackName,
             trackImage: addItem.trackImage,
             musicUrl: addItem.musicUrl);
+
         print('--------aaaa------------');
         print('audio_on_screen');
         print('${audio_on_screen.artist}');
@@ -296,7 +368,6 @@ class MusicBloc {
 
         print('${audio_on_screen.artist}');
       }
-
       _outputStateController.sink.add(audio_on_screen);
     }
   }
