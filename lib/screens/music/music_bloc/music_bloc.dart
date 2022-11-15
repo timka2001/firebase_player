@@ -33,14 +33,16 @@ class Audio {
 class MusicBloc {
   AudioConverter audio_on_screen =
       AudioConverter(artist: [], trackImage: [], trackName: [], musicUrl: []);
-
-  bool connectionServise = false;
+  bool _isDisposed = false;
+  late String nameDocument;
   /////
   Audio playNow = Audio();
   /////
-  final _userRef = FirebaseFirestore.instance.collection('users').doc('Musics');
+  final _userRef = FirebaseFirestore.instance.collection('users');
 
-  MusicBloc() {
+  MusicBloc(String document) {
+    nameDocument = document;
+    _userRef.doc(document);
     _inputEventController.stream.listen(_increaseStream);
 
     _inputAudioEventController.stream.listen(_increaseAudioStream);
@@ -160,6 +162,21 @@ class MusicBloc {
     }
   }
 
+  void onDismissible(int i) {
+    if (playNow.onTap = true) {
+      playNow.audioPlayer.stop();
+      playNow.onTap = false;
+
+      _outputAudioStateController.sink.add(playNow);
+    }
+    audio_on_screen.artist.removeAt(i);
+    audio_on_screen.trackName.removeAt(i);
+    audio_on_screen.trackImage.removeAt(i);
+    audio_on_screen.musicUrl.removeAt(i);
+    _userRef.doc(nameDocument).set(audio_on_screen.toJson());
+    _outputStateController.sink.add(audio_on_screen);
+  }
+
   Future<void> audioTaped(int i) async {
     playNow.tapIndex = i;
     if (playNow.onTap) {
@@ -197,6 +214,10 @@ class MusicBloc {
   }
 
   void addAllMusic(Map<String, dynamic> value) {
+    if (_isDisposed) {
+      return;
+    }
+
     audio_on_screen = AudioConverter.fromJson(value);
     _iniAudio();
     _outputStateController.sink.add(audio_on_screen);
@@ -241,7 +262,7 @@ class MusicBloc {
                     .add('Track Name ${audio_on_screen.trackName.length + 1}');
                 audio_on_screen.trackImage.add(
                     'https://flutter.github.io/assets-for-api-docs/assets/widgets/owl.jpg');
-                _userRef.set(audio_on_screen.toJson());
+                _userRef.doc(nameDocument).set(audio_on_screen.toJson());
                 _outputStateController.sink.add(audio_on_screen);
                 print("task done Class : ${audio_on_screen.artist.length}");
               });
@@ -288,7 +309,7 @@ class MusicBloc {
                       'Track Name ${audio_on_screen.trackName.length + 1}');
                   audio_on_screen.trackImage.add(
                       'https://flutter.github.io/assets-for-api-docs/assets/widgets/owl.jpg');
-                  _userRef.set(audio_on_screen.toJson());
+                  _userRef.doc(nameDocument).set(audio_on_screen.toJson());
                   _outputStateController.sink.add(audio_on_screen);
                 });
               }
@@ -310,7 +331,7 @@ class MusicBloc {
 
     if (enteredKeyword.isEmpty) {
       print('uuuuuusssssseeeeeerrrrr');
-      _userRef.get().then((value) => audio_on_screen =
+      _userRef.doc(nameDocument).get().then((value) => audio_on_screen =
           AudioConverter.fromJson(value.data() as Map<String, dynamic>));
       print(audio_on_screen.artist.length);
       print('uuuuuusssssseeeeeerrrrr');
@@ -318,7 +339,7 @@ class MusicBloc {
       _outputStateController.sink.add(audio_on_screen);
     } else if (enteredKeyword.isNotEmpty) {
       print('uuuuuusssssseeeeeerrrrr');
-      _userRef.get().then((value) => audio_on_screen =
+      _userRef.doc(nameDocument).get().then((value) => audio_on_screen =
           AudioConverter.fromJson(value.data() as Map<String, dynamic>));
       print(audio_on_screen.artist.length);
       print('uuuuuusssssseeeeeerrrrr');
@@ -373,15 +394,15 @@ class MusicBloc {
   }
 
   @override
-  void disposeAudio() {
+  void dispose() {
+    print("Hello");
+
+    playNow.audioPlayer.dispose();
     _inputAudioEventController.close();
     _outputAudioStateController.close();
-  }
-
-  @override
-  void dispose() {
     _inputEventController.close();
     _outputStateController.close();
+    _isDisposed = true;
   }
 }
 

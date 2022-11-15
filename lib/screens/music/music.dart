@@ -4,7 +4,7 @@ import 'package:flutter_firebase_player/firebase/info.dart';
 
 import 'package:flutter_firebase_player/screens/music/music_collection/music_collection.dart';
 
-import '../servic/servic.dart';
+import 'music_bloc/music_bloc.dart';
 
 class Musics extends StatefulWidget {
   @override
@@ -12,7 +12,7 @@ class Musics extends StatefulWidget {
 }
 
 class _MusicsState extends State<Musics> {
-  MusicBloc musicBloc = MusicBloc();
+  MusicBloc musicBloc = MusicBloc('Musics');
 
   @override
   Widget build(BuildContext context) {

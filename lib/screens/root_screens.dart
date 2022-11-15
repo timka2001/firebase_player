@@ -1,8 +1,9 @@
 import 'package:flutter_firebase_player/navigator/navigation_cubit.dart';
 import 'package:flutter_firebase_player/screens/music/music.dart';
-import 'package:flutter_firebase_player/screens/my_music_collection/my_music.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'my_music/my_music.dart';
 
 class RootScreen extends StatefulWidget {
   @override
